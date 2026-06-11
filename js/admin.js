@@ -194,13 +194,16 @@
                   <input type="number" min="1" data-field="height" value="${entry.height}">
                 </div>
               </div>
-              <label class="admin-toggle">
-                <input type="checkbox" data-field="userCanEditDims" ${
-                  entry.userCanEditDims !== false ? "checked" : ""
-                }>
-                <span>允許使用者在前端自行調整寬高</span>
-              </label>
-              <div class="meta">${folder}/${escapeHtml(entry.file.split("/").pop())}</div>
+              <div class="field-footer">
+                <span class="meta">${folder}/${escapeHtml(entry.file.split("/").pop())}</span>
+                <label class="admin-toggle">
+                  <input type="checkbox" data-field="userCanEditDims" ${
+                    entry.userCanEditDims !== false ? "checked" : ""
+                  }>
+                  <span class="admin-toggle-box" aria-hidden="true"></span>
+                  <span class="admin-toggle-text">允許使用者調整寬高</span>
+                </label>
+              </div>
             </div>
             <div class="card-actions">
               <button class="btn btn-ghost" type="button" data-action="upload">更換圖片</button>
