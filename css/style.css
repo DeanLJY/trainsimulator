@@ -7,25 +7,36 @@
 }
 
 :root {
-  --bg: #0f1419;
-  --surface: #1a2332;
-  --surface-2: #243044;
-  --border: #334155;
-  --text: #e2e8f0;
-  --text-muted: #94a3b8;
-  --accent: #38bdf8;
-  --accent-dim: #0ea5e9;
-  --success: #34d399;
-  --danger: #f87171;
+  --bg: #0b1220;
+  --surface: #141f36;
+  --surface-2: #1d2d4f;
+  --border: #3a4f7a;
+  --text: #f2f6ff;
+  --text-muted: #9aaccf;
+  --accent: #22d3ee;
+  --accent-dim: #0891b2;
+  --accent-warm: #fb923c;
+  --accent-glow: rgba(34, 211, 238, 0.22);
+  --warm-glow: rgba(251, 146, 60, 0.14);
+  --success: #4ade80;
+  --success-border: rgba(74, 222, 128, 0.45);
+  --danger: #fb7185;
+  --danger-border: rgba(251, 113, 133, 0.45);
+  --danger-bg: rgba(251, 113, 133, 0.14);
   --warning: #fbbf24;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --warning-border: rgba(251, 191, 36, 0.45);
+  --shadow: 0 8px 32px rgba(6, 12, 30, 0.5);
+  --btn-text: #062028;
 }
 
 html,
 body {
   height: 100%;
   font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
-  background: var(--bg);
+  background:
+    radial-gradient(ellipse at 15% 0%, var(--accent-glow) 0%, transparent 52%),
+    radial-gradient(ellipse at 85% 100%, var(--warm-glow) 0%, transparent 48%),
+    var(--bg);
   color: var(--text);
   line-height: 1.5;
 }
@@ -44,14 +55,16 @@ header {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 var(--accent-glow);
 }
 
 header h1 {
   font-size: 1.15rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  color: var(--text);
 }
 
 header p {
@@ -106,7 +119,7 @@ header p {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
+  color: var(--accent);
   margin-bottom: 12px;
 }
 
@@ -210,13 +223,14 @@ header p {
 }
 
 .btn-primary {
-  background: var(--accent-dim);
-  color: #0f172a;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
+  color: var(--btn-text);
   font-weight: 600;
+  box-shadow: 0 2px 12px var(--accent-glow);
 }
 
 .btn-primary:hover {
-  background: var(--accent);
+  background: linear-gradient(135deg, #67e8f9 0%, var(--accent) 100%);
 }
 
 .btn-primary:disabled {
@@ -236,9 +250,9 @@ header p {
 }
 
 .btn-danger {
-  background: rgba(248, 113, 113, 0.15);
+  background: var(--danger-bg);
   color: var(--danger);
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  border: 1px solid var(--danger-border);
 }
 
 .palette {
@@ -261,7 +275,7 @@ header p {
 
 .palette-item:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2);
+  box-shadow: 0 0 0 1px var(--accent-glow), 0 4px 16px var(--warm-glow);
 }
 
 .palette-item:active {
@@ -304,7 +318,8 @@ header p {
   justify-content: center;
   padding: 24px;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 0%, var(--accent-glow) 0%, transparent 58%),
+    radial-gradient(ellipse at 50% 100%, var(--warm-glow) 0%, transparent 50%),
     var(--bg);
   overflow: auto;
   position: relative;
@@ -389,7 +404,8 @@ header p {
 }
 
 .placed-item.selected {
-  border-color: var(--warning);
+  border-color: var(--accent-warm);
+  box-shadow: 0 0 0 1px var(--warm-glow);
   z-index: 20;
 }
 
@@ -429,7 +445,7 @@ header p {
   height: 22px;
   border-radius: 50%;
   background: var(--accent);
-  color: #0f1419;
+  color: var(--btn-text);
   border: none;
   font-size: 13px;
   line-height: 1;
@@ -512,15 +528,16 @@ header p {
 }
 
 .status-card.ok {
-  border-color: rgba(52, 211, 153, 0.4);
+  border-color: var(--success-border);
+  background: linear-gradient(135deg, var(--surface-2) 0%, rgba(74, 222, 128, 0.06) 100%);
 }
 
 .status-card.warn {
-  border-color: rgba(251, 191, 36, 0.4);
+  border-color: var(--warning-border);
 }
 
 .status-card.error {
-  border-color: rgba(248, 113, 113, 0.4);
+  border-color: var(--danger-border);
 }
 
 .status-card .status-title {
@@ -607,8 +624,13 @@ header p {
 }
 
 .toast.error {
-  border-color: rgba(248, 113, 113, 0.5);
+  border-color: var(--danger-border);
   color: var(--danger);
+}
+
+.toast.show:not(.error) {
+  border-color: var(--accent);
+  box-shadow: var(--shadow), 0 0 20px var(--accent-glow);
 }
 
 .hint {

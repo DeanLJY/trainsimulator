@@ -40,8 +40,8 @@
 }
 
 .admin-notice {
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.12) 0%, rgba(251, 146, 60, 0.08) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.35);
   border-radius: 8px;
   padding: 12px 14px;
   font-size: 0.82rem;
@@ -65,7 +65,7 @@
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: var(--accent);
 }
 
 .admin-grid {
@@ -146,7 +146,7 @@
 }
 
 .admin-toggle input:checked + .admin-toggle-box::after {
-  border-color: #0f1419;
+  border-color: var(--btn-text);
   opacity: 1;
 }
 
