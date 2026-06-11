@@ -9,7 +9,6 @@
   let dragState = null;
   let scale = 1;
   let exportInProgress = false;
-  let dataSource = "error";
   const imageCache = new Map();
   const adminImageUrls = new Map();
 
@@ -42,7 +41,6 @@
 
   async function init() {
     const loaded = await loadConfig();
-    updateDataSourceBadge();
 
     if (!loaded) {
       showLoadError();
@@ -59,22 +57,6 @@
     bindPointerDrag();
   }
 
-  function updateDataSourceBadge() {
-    const el = $("#data-source-badge");
-    if (!el) return;
-
-    if (dataSource === "firebase") {
-      el.textContent = "資料來源：Firebase 雲端";
-      el.dataset.source = "firebase";
-      el.hidden = false;
-      return;
-    }
-
-    el.textContent = "無法載入雲端資料";
-    el.dataset.source = "error";
-    el.hidden = false;
-  }
-
   function showLoadError() {
     bgConfig.innerHTML =
       '<p class="hint" style="color:var(--danger)">無法從 Firebase 載入設定。請確認網路連線，或請管理員至後台發布資料。</p>';
@@ -87,25 +69,21 @@
 
   async function loadConfig() {
     if (!window.TrainModelFirebase?.isConfigured()) {
-      dataSource = "error";
       return false;
     }
 
     try {
       const cloudConfig = await TrainModelFirebase.getConfig();
       if (!cloudConfig?.backgrounds?.length && !cloudConfig?.items?.length) {
-        dataSource = "error";
         return false;
       }
 
       config = cloudConfig;
-      dataSource = "firebase";
       const urls = await TrainModelFirebase.loadImageUrlsForConfig(config);
       urls.forEach((url, path) => adminImageUrls.set(path, url));
       return true;
     } catch (err) {
       console.error("Firebase load failed:", err);
-      dataSource = "error";
       return false;
     }
   }
