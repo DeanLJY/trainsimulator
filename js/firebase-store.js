@@ -33,7 +33,9 @@
       requireFirebase();
       if (!app) {
         app = firebase.initializeApp(window.FIREBASE_CONFIG);
-        auth = firebase.auth();
+        if (typeof firebase.auth === "function") {
+          auth = firebase.auth();
+        }
         db = firebase.firestore();
         storage = firebase.storage();
       }
@@ -49,6 +51,9 @@
 
   async function signIn(email, password) {
     await init();
+    if (!auth) {
+      throw new Error("Firebase Auth SDK not loaded.");
+    }
     return auth.signInWithEmailAndPassword(email, password);
   }
 
@@ -60,7 +65,7 @@
   function onAuthStateChanged(callback) {
     init()
       .then((ok) => {
-        if (!ok) return;
+        if (!ok || !auth) return;
         auth.onAuthStateChanged(callback);
       })
       .catch(() => {});

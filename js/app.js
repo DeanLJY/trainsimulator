@@ -102,7 +102,8 @@
       const urls = await TrainModelFirebase.loadImageUrlsForConfig(config);
       urls.forEach((url, path) => adminImageUrls.set(path, url));
       return true;
-    } catch {
+    } catch (err) {
+      console.error("Firebase load failed:", err);
       dataSource = "error";
       return false;
     }
@@ -926,7 +927,7 @@
 
     $("#apply-config")?.addEventListener("click", () => {
       applyConfigFromInputs();
-      showToast("尺寸已套用");
+      showToast("尺寸已套用（僅本次瀏覽有效，不會上傳雲端）");
     });
 
     $("#save-image").addEventListener("click", () => {
