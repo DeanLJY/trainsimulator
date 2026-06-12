@@ -72,7 +72,7 @@
   }
 
   function normalizeEntry(entry) {
-    const normalized = {
+    return {
       id: entry.id,
       name: entry.name,
       file: entry.file,
@@ -80,11 +80,6 @@
       height: entry.height,
       userCanEditDims: entry.userCanEditDims !== false,
     };
-    const validFaces = ["front", "back", "left", "right"];
-    if (entry.face && validFaces.includes(entry.face)) {
-      normalized.face = entry.face;
-    }
-    return normalized;
   }
 
   function normalizeConfig(config) {
@@ -155,10 +150,16 @@
     urlCache.delete(path);
   }
 
-  async function getImageBytes(path) {
-    if (!path) throw new Error("Missing storage path.");
-    await init();
-    return storageRef(path).getBytes();
+  async function getImageBlob(path) {
+    if (!path) return null;
+    const ready = await init();
+    if (!ready) return null;
+
+    try {
+      return await storageRef(path).getBlob();
+    } catch {
+      return null;
+    }
   }
 
   async function getImageUrl(path) {
@@ -223,8 +224,8 @@
     saveConfig,
     uploadImage,
     deleteImage,
+    getImageBlob,
     getImageUrl,
-    getImageBytes,
     loadImageUrlsForConfig,
     publishConfig,
     signIn,
