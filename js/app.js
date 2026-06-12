@@ -1,10 +1,25 @@
 (function () {
   "use strict";
 
+  const FACES = ["front", "back", "left", "right"];
+  const FACE_LABELS = { front: "前", back: "後", left: "左", right: "右" };
+  const DEFAULT_FACE_ORDER = ["front", "back", "left", "right"];
+  const SWIPE_THRESHOLD = 56;
+
   let config = { backgrounds: [], items: [] };
   let currentBgId = null;
-  let placedItems = [];
+  let currentFace = "front";
+  let faceToBgId = {};
+  let bgIdToFace = {};
+  const placedByFace = {
+    front: [],
+    back: [],
+    left: [],
+    right: [],
+  };
+  let placedItems = placedByFace.front;
   let selectedPlacedId = null;
+  let swipeStart = null;
   let paletteRotation = 0;
   let dragState = null;
   let scale = 1;
@@ -32,7 +47,10 @@
   const boardWrapper = $("#board-wrapper");
   const boardBg = $("#board-bg");
   const palette = $("#palette");
-  const bgSelect = $("#bg-select");
+  const facePicker = $("#face-picker");
+  const faceNav = $("#face-nav");
+  const faceIndicator = $("#face-indicator");
+  const viewport = $("#viewport");
   const bgConfig = $("#bg-config");
   const itemsConfig = $("#items-config");
   const placedList = $("#placed-list");
@@ -48,10 +66,11 @@
       return;
     }
 
-    buildBgSelect();
+    buildFaceMap();
+    buildFacePicker();
     buildBgConfig();
     buildItemsConfig();
-    selectBackground(config.backgrounds[0]?.id);
+    selectFace(getInitialFace());
     buildPalette();
     bindEvents();
     bindPointerDrag();
@@ -132,10 +151,70 @@
     return getItemDims(def, placed.rotation);
   }
 
-  function buildBgSelect() {
-    bgSelect.innerHTML = config.backgrounds
-      .map((bg) => `<option value="${bg.id}">${bg.name}</option>`)
-      .join("");
+  function buildFaceMap() {
+    faceToBgId = {};
+    bgIdToFace = {};
+    const unassigned = [];
+
+    config.backgrounds.forEach((bg) => {
+      if (bg.face && FACES.includes(bg.face) && !faceToBgId[bg.face]) {
+        faceToBgId[bg.face] = bg.id;
+        bgIdToFace[bg.id] = bg.face;
+      } else if (!bgIdToFace[bg.id]) {
+        unassigned.push(bg);
+      }
+    });
+
+    let idx = 0;
+    DEFAULT_FACE_ORDER.forEach((face) => {
+      if (!faceToBgId[face] && unassigned[idx]) {
+        const bg = unassigned[idx++];
+        faceToBgId[face] = bg.id;
+        bgIdToFace[bg.id] = face;
+      }
+    });
+  }
+
+  function getInitialFace() {
+    return DEFAULT_FACE_ORDER.find((face) => faceToBgId[face]) || FACES[0];
+  }
+
+  function buildFacePicker() {
+    if (!facePicker) return;
+
+    facePicker.innerHTML = FACES.map((face) => {
+      const bgId = faceToBgId[face];
+      const bg = config.backgrounds.find((b) => b.id === bgId);
+      const disabled = bg ? "" : " disabled";
+      const sub = bg ? bg.name : "未設定";
+      return `
+        <button type="button" class="face-picker-btn" data-face="${face}"${disabled}>
+          <span class="face-picker-label">${FACE_LABELS[face]}牆</span>
+          <span class="face-picker-sub">${sub}</span>
+        </button>
+      `;
+    }).join("");
+  }
+
+  function updateFaceNav() {
+    if (faceIndicator) {
+      faceIndicator.textContent = FACE_LABELS[currentFace] || currentFace;
+    }
+
+    $$("[data-face]").forEach((btn) => {
+      const face = btn.dataset.face;
+      if (!face) return;
+      const active = face === currentFace;
+      btn.classList.toggle("active", active);
+      if (btn.classList.contains("face-picker-btn")) {
+        btn.disabled = !faceToBgId[face];
+      }
+    });
+
+    bgConfig.querySelectorAll(".config-card").forEach((card) => {
+      const face = bgIdToFace[card.dataset.bgId];
+      card.classList.toggle("config-card-active", face === currentFace);
+    });
   }
 
   function buildDimFields(entry, widthAttr, heightAttr) {
@@ -175,10 +254,14 @@
       const card = document.createElement("div");
       card.className = `config-card${canUserEditDims(bg) ? "" : " config-card-locked"}`;
       card.dataset.bgId = bg.id;
+      const faceTag = bgIdToFace[bg.id]
+        ? `<span class="face-tag">${FACE_LABELS[bgIdToFace[bg.id]]}牆</span>`
+        : "";
       card.innerHTML = `
         <div class="card-title">
           <img src="${assetUrl(bg.file)}" alt="">
           <span>${bg.name}</span>
+          ${faceTag}
         </div>
         ${buildDimFields(bg, `data-bg-width="${bg.id}"`, `data-bg-height="${bg.id}"`)}
       `;
@@ -224,15 +307,10 @@
     updatePaletteState();
   }
 
-  function selectBackground(bgId) {
-    const bg = config.backgrounds.find((b) => b.id === bgId);
+  function applyBackgroundView(bg) {
     if (!bg) return;
 
-    currentBgId = bgId;
-    bgSelect.value = bgId;
-    placedItems = [];
-    selectedPlacedId = null;
-
+    currentBgId = bg.id;
     const url = assetUrl(bg.file);
     boardBg.src = url;
     boardBg.alt = bg.name;
@@ -241,11 +319,83 @@
       boardBg.src = bg.file.split("/").map(encodeURIComponent).join("/");
     };
 
+    const faceLabel = FACE_LABELS[currentFace] || "";
+    $("#board-label").textContent = `${faceLabel}牆 · ${bg.name} — ${bg.width} × ${bg.height} mm`;
+  }
+
+  function selectFace(face) {
+    const bgId = faceToBgId[face];
+    const bg = config.backgrounds.find((b) => b.id === bgId);
+    if (!bg) {
+      showToast(`${FACE_LABELS[face] || face}牆尚未設定背景`, true);
+      return;
+    }
+
+    currentFace = face;
+    placedItems = placedByFace[currentFace];
+    selectedPlacedId = null;
+
+    applyBackgroundView(bg);
+    updateFaceNav();
     resizeBoard();
     renderPlacedItems();
     updateStatus();
     updatePaletteState();
-    $("#board-label").textContent = `${bg.name} — ${bg.width} × ${bg.height} mm`;
+  }
+
+  function faceFromSwipe(dx, dy) {
+    if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) {
+      return null;
+    }
+
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      return dx < 0 ? "left" : "right";
+    }
+
+    return dy < 0 ? "front" : "back";
+  }
+
+  function isSwipeTarget(el) {
+    if (!el) return false;
+    if (el.closest(".face-nav") || el.closest(".face-picker")) return false;
+    return el.closest("#board-wrapper") || el.closest("#board") || el.closest(".scene");
+  }
+
+  function bindFaceSwipe() {
+    if (!viewport) return;
+
+    const onStart = (e) => {
+      if (dragState || pointerDrag) return;
+      if (!isSwipeTarget(e.target)) return;
+      if (e.target.closest(".placed-item")) return;
+
+      const point = e.touches ? e.touches[0] : e;
+      swipeStart = { x: point.clientX, y: point.clientY };
+    };
+
+    const onEnd = (e) => {
+      if (!swipeStart) return;
+      if (dragState || pointerDrag) {
+        swipeStart = null;
+        return;
+      }
+
+      const point = e.changedTouches ? e.changedTouches[0] : e;
+      const face = faceFromSwipe(
+        point.clientX - swipeStart.x,
+        point.clientY - swipeStart.y
+      );
+      swipeStart = null;
+
+      if (face && face !== currentFace) {
+        selectFace(face);
+      }
+    };
+
+    viewport.addEventListener("touchstart", onStart, { passive: true });
+    viewport.addEventListener("touchend", onEnd, { passive: true });
+    viewport.addEventListener("mousedown", onStart);
+    viewport.addEventListener("mouseup", onEnd);
   }
 
   function resizeBoard() {
@@ -470,6 +620,31 @@
     return promise;
   }
 
+  async function loadCanvasSafeImage(storagePath) {
+    if (!storagePath) throw new Error("Missing image path");
+
+    const cacheKey = `export:${storagePath}`;
+    if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
+
+    const promise = (async () => {
+      if (window.TrainModelFirebase?.isConfigured()) {
+        const bytes = await TrainModelFirebase.getImageBytes(storagePath);
+        const blob = new Blob([bytes]);
+        const objectUrl = URL.createObjectURL(blob);
+        try {
+          return await loadImageElement(objectUrl, false);
+        } finally {
+          URL.revokeObjectURL(objectUrl);
+        }
+      }
+
+      return loadImage(assetUrl(storagePath));
+    })();
+
+    imageCache.set(cacheKey, promise);
+    return promise;
+  }
+
   function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -483,7 +658,8 @@
     const bg = getCurrentBg();
     const safeName = (bg?.name || "board").replace(/[<>:"/\\|?*]/g, "-");
     const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-    return `列車建模-${safeName}-${placedItems.length}項-${stamp}.png`;
+    const faceLabel = FACE_LABELS[currentFace] || currentFace;
+    return `列車建模-${faceLabel}牆-${safeName}-${placedItems.length}項-${stamp}.png`;
   }
 
   async function exportBoardImage(options = {}) {
@@ -507,13 +683,13 @@
       canvas.height = bg.height;
       const ctx = canvas.getContext("2d");
 
-      const bgImg = await loadImage(assetUrl(bg.file));
+      const bgImg = await loadCanvasSafeImage(bg.file);
       ctx.drawImage(bgImg, 0, 0, bg.width, bg.height);
 
       for (const placed of placedItems) {
         const def = getItemDef(placed.itemId);
         const dims = getPlacedDims(placed);
-        const itemImg = await loadImage(assetUrl(def.file));
+        const itemImg = await loadCanvasSafeImage(def.file);
         const rot = normalizeRotation(placed.rotation);
         if (rot !== 0) {
           ctx.save();
@@ -539,9 +715,10 @@
         showToast(auto ? "已自動儲存合成圖片" : "圖片已儲存");
       }
       return true;
-    } catch {
+    } catch (err) {
+      console.error("Export failed:", err);
       if (!silent) {
-        showToast("無法儲存圖片，請用 Live Server 或 GitHub Pages 開啟", true);
+        showToast("無法儲存圖片，請確認網路連線後再試", true);
       }
       return false;
     } finally {
@@ -862,7 +1039,8 @@
 
     const bg = getCurrentBg();
     if (bg) {
-      $("#board-label").textContent = `${bg.name} — ${bg.width} × ${bg.height} mm`;
+      const faceLabel = FACE_LABELS[currentFace] || "";
+      $("#board-label").textContent = `${faceLabel}牆 · ${bg.name} — ${bg.width} × ${bg.height} mm`;
     }
   }
 
@@ -1057,8 +1235,17 @@
     document.addEventListener("mouseup", onPointerUp);
   }
 
+  function bindFaceNav() {
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-face]");
+      if (!btn || btn.disabled) return;
+      selectFace(btn.dataset.face);
+    });
+  }
+
   function bindEvents() {
-    bgSelect.addEventListener("change", (e) => selectBackground(e.target.value));
+    bindFaceNav();
+    bindFaceSwipe();
 
     $("#apply-config")?.addEventListener("click", () => {
       applyConfigFromInputs();
@@ -1070,12 +1257,13 @@
     });
 
     $("#clear-board").addEventListener("click", () => {
-      placedItems = [];
+      placedByFace[currentFace] = [];
+      placedItems = placedByFace[currentFace];
       selectedPlacedId = null;
       renderPlacedItems();
       updateStatus();
       updatePaletteState();
-      showToast("背景已清空");
+      showToast(`${FACE_LABELS[currentFace]}牆已清空`);
     });
 
     board.addEventListener("dragover", onBoardDragOver);

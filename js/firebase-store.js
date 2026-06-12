@@ -72,7 +72,7 @@
   }
 
   function normalizeEntry(entry) {
-    return {
+    const normalized = {
       id: entry.id,
       name: entry.name,
       file: entry.file,
@@ -80,6 +80,11 @@
       height: entry.height,
       userCanEditDims: entry.userCanEditDims !== false,
     };
+    const validFaces = ["front", "back", "left", "right"];
+    if (entry.face && validFaces.includes(entry.face)) {
+      normalized.face = entry.face;
+    }
+    return normalized;
   }
 
   function normalizeConfig(config) {
@@ -150,6 +155,12 @@
     urlCache.delete(path);
   }
 
+  async function getImageBytes(path) {
+    if (!path) throw new Error("Missing storage path.");
+    await init();
+    return storageRef(path).getBytes();
+  }
+
   async function getImageUrl(path) {
     if (!path) return "";
     if (urlCache.has(path)) return urlCache.get(path);
@@ -213,6 +224,7 @@
     uploadImage,
     deleteImage,
     getImageUrl,
+    getImageBytes,
     loadImageUrlsForConfig,
     publishConfig,
     signIn,

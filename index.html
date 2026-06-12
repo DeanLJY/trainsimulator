@@ -16,15 +16,14 @@
       <div class="header-actions">
         <a class="btn btn-ghost" href="admin.html">管理後台</a>
         <button class="btn btn-primary" id="save-image" type="button">儲存圖片</button>
-        <button class="btn btn-ghost" id="clear-board" type="button">清空背景</button>
+        <button class="btn btn-ghost" id="clear-board" type="button">清空此牆</button>
       </div>
     </header>
 
     <aside class="panel panel-left">
-      <h2>選擇背景</h2>
-      <div class="field">
-        <select id="bg-select"></select>
-      </div>
+      <h2>房間四面</h2>
+      <div class="face-picker" id="face-picker"></div>
+      <p class="hint">點選牆面，或在中央區域滑動切換（左/右/上/下對應左/右/前/後牆）。</p>
 
       <h2>背景尺寸設定</h2>
       <div id="bg-config"></div>
@@ -38,7 +37,16 @@
       <p class="hint">單位為毫米 (mm)。尺寸預設來自雲端，修改後按「套用尺寸」僅在本次瀏覽有效，不會上傳 Firebase，重新整理後恢復雲端設定。</p>
     </aside>
 
-    <main class="viewport">
+    <main class="viewport" id="viewport">
+      <nav class="face-nav" id="face-nav" aria-label="切換牆面">
+        <button type="button" class="face-btn" data-face="left" title="左牆">← 左</button>
+        <div class="face-nav-column">
+          <button type="button" class="face-btn" data-face="front" title="前牆">↑ 前</button>
+          <span class="face-current" id="face-indicator">前</span>
+          <button type="button" class="face-btn" data-face="back" title="後牆">↓ 後</button>
+        </div>
+        <button type="button" class="face-btn" data-face="right" title="右牆">右 →</button>
+      </nav>
       <div class="scene">
         <div class="board-wrapper" id="board-wrapper">
           <div class="board" id="board">
@@ -60,13 +68,14 @@
 
         <p class="hint" style="margin-top:16px">
           <strong>操作說明</strong><br>
+          房間四面（前/後/左/右）可獨立排版；用方向按鈕或滑動切換牆面。<br>
           從右側下方拖動組件到背景貼上。<br>
           已貼上的組件可再次拖動調整位置。<br>
           點選組件後按 Delete 或點 × 移除；按 R 或 ↻ 每次旋轉 90°（0→90→180→270）。<br>
           放置前按 R 可切換下次組件的旋轉角度。<br>
           組件會自動對齊網格。<br>
           只要背景內有空位且不重疊，即可繼續放置組件。<br>
-          完成排版後按上方「儲存圖片」匯出合成圖。
+          「儲存圖片」僅匯出目前牆面的合成圖。
         </p>
       </div>
 
