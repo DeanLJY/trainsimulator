@@ -258,15 +258,19 @@
     if (w > 0) scale = w / bg.width;
   }
 
+  function getViewportScrollEl() {
+    return $("#viewport-scroll") || $(".viewport");
+  }
+
   function resizeBoard() {
     const bg = getCurrentBg();
-    const viewport = $(".viewport");
-    if (!bg || !viewport) return;
+    const scrollEl = getViewportScrollEl();
+    if (!bg || !scrollEl) return;
 
     const padX = 32;
-    const padY = 40;
-    const availW = Math.max(280, viewport.clientWidth - padX);
-    const availH = Math.max(220, viewport.clientHeight - padY);
+    const padY = 32;
+    const availW = Math.max(280, scrollEl.clientWidth - padX);
+    const availH = Math.max(220, scrollEl.clientHeight - padY);
     const aspect = bg.width / bg.height;
 
     let displayW = availW;
@@ -294,6 +298,11 @@
     const inBtn = $("#zoom-in");
     if (outBtn) outBtn.disabled = boardZoom <= ZOOM_MIN + 0.001;
     if (inBtn) inBtn.disabled = boardZoom >= ZOOM_MAX - 0.001;
+
+    const scrollEl = getViewportScrollEl();
+    if (scrollEl) {
+      scrollEl.classList.toggle("is-zoomed", boardZoom > 1.001);
+    }
   }
 
   function setBoardZoom(nextZoom) {
@@ -1195,8 +1204,8 @@
   }
 
   function bindBoardResize() {
-    const viewport = $(".viewport");
-    if (!viewport) return;
+    const scrollEl = getViewportScrollEl();
+    if (!scrollEl) return;
 
     const onLayoutChange = () => {
       resizeBoard();
@@ -1204,7 +1213,7 @@
     };
 
     if (typeof ResizeObserver !== "undefined") {
-      new ResizeObserver(onLayoutChange).observe(viewport);
+      new ResizeObserver(onLayoutChange).observe(scrollEl);
     }
 
     window.addEventListener("orientationchange", () => {
