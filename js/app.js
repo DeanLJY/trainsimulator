@@ -708,32 +708,24 @@
     dragState = null;
   }
 
-  function getItemUiScale(displayW, displayH) {
-    const base = Math.min(displayW, displayH);
-    return Math.max(7, Math.min(28, base * 0.13));
-  }
-
   function applyItemUiScale(el, displayW, displayH) {
-    const labelSize = getItemUiScale(displayW, displayH);
-    el.style.setProperty("--label-size", `${labelSize}px`);
-    el.style.setProperty("--control-size", `${Math.max(18, Math.min(34, labelSize * 1.75))}px`);
+    const base = Math.min(displayW, displayH);
+    const controlSize = Math.max(18, Math.min(34, base * 0.22));
+    el.style.setProperty("--control-size", `${controlSize}px`);
   }
 
   function buildPlacedItemMarkup(placed, itemDef) {
     const rot = normalizeRotation(placed.rotation);
-    const eff = getItemDims(itemDef, rot);
     const rotClass = rot !== 0 ? " is-angled" : "";
     const innerStyle =
       rot !== 0
         ? ` style="width:${modelToDisplay(itemDef.width)}px;height:${modelToDisplay(itemDef.height)}px;--item-rotation:${rot}deg"`
         : "";
-    const dimText = `${eff.width}×${eff.height}${rotationLabel(rot)}`;
 
     return `
       <div class="placed-item-inner${rotClass}"${innerStyle}>
         <img src="${assetUrl(itemDef.file)}" alt="${itemDef.name}" draggable="false">
       </div>
-      <span class="dim-label">${dimText}</span>
       <button class="rotate-btn" type="button" title="旋轉 90°（0→90→180→270）">↻</button>
       <button class="remove-btn" type="button" title="移除">×</button>
     `;
