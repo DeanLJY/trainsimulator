@@ -655,6 +655,34 @@ header p {
   color: var(--text-muted);
 }
 
+.board-zoom {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.board-zoom .zoom-level {
+  min-width: 52px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.board-zoom .btn {
+  min-width: 36px;
+  padding: 6px 12px;
+}
+
+@media (min-width: 1024px) {
+  .board-zoom {
+    display: flex;
+  }
+}
+
 @media (min-width: 768px) and (max-width: 1199px) {
   .app {
     grid-template-columns: 240px 1fr 220px;

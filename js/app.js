@@ -8,6 +8,10 @@
   let paletteRotation = 0;
   let dragState = null;
   let scale = 1;
+  let boardZoom = 1;
+  const ZOOM_MIN = 0.5;
+  const ZOOM_MAX = 2.5;
+  const ZOOM_STEP = 0.1;
   let exportInProgress = false;
   const exportImageCache = new Map();
   const adminImageUrls = new Map();
@@ -230,6 +234,7 @@
     bgSelect.value = bgId;
     placedItems = [];
     selectedPlacedId = null;
+    boardZoom = 1;
 
     const url = assetUrl(bg.file);
     boardBg.src = url;
@@ -272,10 +277,41 @@
       displayW = displayH * aspect;
     }
 
+    displayW *= boardZoom;
+    displayH *= boardZoom;
+
     board.style.width = `${displayW}px`;
     board.style.height = `${displayH}px`;
     syncScaleFromBoard();
     updateBoardGridVisual();
+    updateZoomUi();
+  }
+
+  function updateZoomUi() {
+    const level = $("#zoom-level");
+    if (level) level.textContent = `${Math.round(boardZoom * 100)}%`;
+    const outBtn = $("#zoom-out");
+    const inBtn = $("#zoom-in");
+    if (outBtn) outBtn.disabled = boardZoom <= ZOOM_MIN + 0.001;
+    if (inBtn) inBtn.disabled = boardZoom >= ZOOM_MAX - 0.001;
+  }
+
+  function setBoardZoom(nextZoom) {
+    boardZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, +nextZoom.toFixed(2)));
+    resizeBoard();
+    renderPlacedItems();
+  }
+
+  function zoomBoardIn() {
+    setBoardZoom(boardZoom + ZOOM_STEP);
+  }
+
+  function zoomBoardOut() {
+    setBoardZoom(boardZoom - ZOOM_STEP);
+  }
+
+  function resetBoardZoom() {
+    setBoardZoom(1);
   }
 
   function modelToDisplay(modelVal) {
@@ -1196,6 +1232,10 @@
       updatePaletteState();
       showToast("背景已清空");
     });
+
+    $("#zoom-in")?.addEventListener("click", zoomBoardIn);
+    $("#zoom-out")?.addEventListener("click", zoomBoardOut);
+    $("#zoom-reset")?.addEventListener("click", resetBoardZoom);
 
     board.addEventListener("dragover", onBoardDragOver);
     board.addEventListener("dragleave", onBoardDragLeave);
