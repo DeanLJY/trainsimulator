@@ -689,16 +689,6 @@
     dragState = null;
   }
 
-  function applyDimLabelScale(el, displayW, displayH) {
-    const minSide = Math.min(displayW, displayH);
-    const fontSize = Math.max(7, Math.min(18, minSide * 0.11));
-    el.style.setProperty("--dim-font-size", `${fontSize.toFixed(1)}px`);
-    el.style.setProperty("--dim-pad-y", `${Math.max(1, fontSize * 0.18).toFixed(1)}px`);
-    el.style.setProperty("--dim-pad-x", `${Math.max(2, fontSize * 0.4).toFixed(1)}px`);
-    el.style.setProperty("--dim-offset", `${Math.max(2, fontSize * 0.22).toFixed(1)}px`);
-    el.style.setProperty("--dim-radius", `${Math.max(2, fontSize * 0.22).toFixed(1)}px`);
-  }
-
   function buildPlacedItemMarkup(placed, itemDef) {
     const rot = normalizeRotation(placed.rotation);
     const eff = getItemDims(itemDef, rot);
@@ -730,13 +720,10 @@
       if (placed.instanceId === selectedPlacedId) el.classList.add("selected");
       if (normalizeRotation(placed.rotation) !== 0) el.classList.add("is-rotated");
       el.dataset.instanceId = placed.instanceId;
-      const displayW = modelToDisplay(eff.width);
-      const displayH = modelToDisplay(eff.height);
       el.style.left = `${modelToDisplay(placed.x)}px`;
       el.style.top = `${modelToDisplay(placed.y)}px`;
-      el.style.width = `${displayW}px`;
-      el.style.height = `${displayH}px`;
-      applyDimLabelScale(el, displayW, displayH);
+      el.style.width = `${modelToDisplay(eff.width)}px`;
+      el.style.height = `${modelToDisplay(eff.height)}px`;
 
       el.innerHTML = buildPlacedItemMarkup(placed, itemDef);
 
