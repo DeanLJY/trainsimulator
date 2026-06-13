@@ -207,7 +207,6 @@
     config.items.forEach((item) => {
       const el = document.createElement("div");
       el.className = "palette-item";
-      el.draggable = true;
       el.dataset.itemId = item.id;
       el.innerHTML = `
         <img src="${assetUrl(item.file)}" alt="${item.name}" draggable="false">
@@ -216,9 +215,7 @@
           <div class="dims">${item.width} × ${item.height} mm</div>
         </div>
       `;
-      el.addEventListener("dragstart", onPaletteDragStart);
-      el.addEventListener("dragend", onDragEnd);
-      el.addEventListener("mousedown", onPalettePointerDown);
+      el.addEventListener("pointerdown", onPalettePointerDown);
       palette.appendChild(el);
     });
     updatePaletteState();
@@ -730,7 +727,7 @@
 
       el.innerHTML = buildPlacedItemMarkup(placed, itemDef);
 
-      el.addEventListener("mousedown", (e) => onPlacedPointerDown(e, placed.instanceId));
+      el.addEventListener("pointerdown", (e) => onPlacedPointerDown(e, placed.instanceId));
       el.addEventListener("click", (e) => {
         if (
           e.target.classList.contains("remove-btn") ||
@@ -918,8 +915,34 @@
   let pointerDrag = null;
   let dragGhost = null;
 
+  function isLeftPointer(e) {
+    return e.pointerType !== "mouse" || e.button === 0;
+  }
+
+  function capturePointer(e, el) {
+    if (el?.setPointerCapture) {
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  function releasePointer(e, el) {
+    if (el?.releasePointerCapture) {
+      try {
+        if (!el.hasPointerCapture || el.hasPointerCapture(e.pointerId)) {
+          el.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   function onPalettePointerDown(e) {
-    if (e.button !== 0) return;
+    if (!isLeftPointer(e) || e.isPrimary === false) return;
     const el = e.currentTarget;
     if (el.classList.contains("disabled")) return;
 
@@ -928,7 +951,14 @@
     if (!itemDef || hasNoAvailableSlot(itemDef)) return;
 
     e.preventDefault();
-    pointerDrag = { type: "palette", itemId, rotation: paletteRotation };
+    capturePointer(e, el);
+    pointerDrag = {
+      type: "palette",
+      itemId,
+      rotation: paletteRotation,
+      pointerId: e.pointerId,
+      captureEl: el,
+    };
 
     const ghostDims = getItemDims(itemDef, paletteRotation);
     dragGhost = document.createElement("div");
@@ -943,7 +973,7 @@
   }
 
   function onPlacedPointerDown(e, instanceId) {
-    if (e.button !== 0) return;
+    if (!isLeftPointer(e) || e.isPrimary === false) return;
     if (e.target.classList.contains("remove-btn") || e.target.classList.contains("rotate-btn")) {
       return;
     }
@@ -953,9 +983,11 @@
 
     const itemDef = getItemDef(placed.itemId);
     const coords = getBoardCoords(e.clientX, e.clientY);
+    const el = e.currentTarget;
 
     e.preventDefault();
     e.stopPropagation();
+    capturePointer(e, el);
 
     selectedPlacedId = instanceId;
     pointerDrag = {
@@ -966,13 +998,12 @@
       startX: placed.x,
       startY: placed.y,
       moved: false,
+      pointerId: e.pointerId,
+      captureEl: el,
     };
 
-    const el = board.querySelector(`[data-instance-id="${instanceId}"]`);
-    if (el) {
-      el.classList.add("dragging");
-      el.style.zIndex = "30";
-    }
+    el.classList.add("dragging");
+    el.style.zIndex = "30";
   }
 
   function updatePlacedElement(placed) {
@@ -1004,6 +1035,8 @@
 
   function onPointerMove(e) {
     if (!pointerDrag) return;
+    if (e.pointerId !== pointerDrag.pointerId) return;
+    e.preventDefault();
     moveDragGhost(e.clientX, e.clientY);
 
     const coords = getBoardCoords(e.clientX, e.clientY);
@@ -1048,6 +1081,7 @@
 
   function onPointerUp(e) {
     if (!pointerDrag) return;
+    if (e.pointerId !== pointerDrag.pointerId) return;
 
     const coords = getBoardCoords(e.clientX, e.clientY);
     board.classList.remove("drag-over", "drag-invalid");
@@ -1089,12 +1123,15 @@
       dragGhost.remove();
       dragGhost = null;
     }
+
+    releasePointer(e, pointerDrag.captureEl);
     pointerDrag = null;
   }
 
   function bindPointerDrag() {
-    document.addEventListener("mousemove", onPointerMove);
-    document.addEventListener("mouseup", onPointerUp);
+    document.addEventListener("pointermove", onPointerMove, { passive: false });
+    document.addEventListener("pointerup", onPointerUp);
+    document.addEventListener("pointercancel", onPointerUp);
   }
 
   function bindEvents() {
